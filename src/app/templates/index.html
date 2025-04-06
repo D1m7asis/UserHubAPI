@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Документация User API</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 { color: #2c3e50; }
+        .endpoint {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .method {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        .path { color: #3498db; }
+        .btn {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>UserHub - API управления пользователями</h1>
+    <p>Добро пожаловать в сервис управления пользователями. Доступные методы API:</p>
+
+    <div class="endpoint">
+        <span class="method">POST</span> <span class="path">/users</span>
+        <p>Создать нового пользователя. Требуются имя, фамилия и пароль.</p>
+    </div>
+
+    <div class="endpoint">
+        <span class="method">GET</span> <span class="path">/users</span>
+        <p>Получить список всех пользователей.</p>
+    </div>
+
+    <div class="endpoint">
+        <span class="method">GET</span> <span class="path">/users/{id}</span>
+        <p>Получить конкретного пользователя по ID.</p>
+    </div>
+
+    <a href="/schema/swagger" class="btn">Интерактивная документация (Swagger)</a>
+    <a href="/schema/redoc" class="btn" style="background: #9b59b6;">Альтернативная документация (Redoc)</a>
+</body>
+</html>
