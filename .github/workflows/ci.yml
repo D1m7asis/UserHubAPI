@@ -1,0 +1,85 @@
+name: CI Pipeline
+
+on: [push, pull_request]
+
+env:
+  POSTGRES_USER: user
+  POSTGRES_PASSWORD: password
+  POSTGRES_DB: users_db
+  DATABASE_URL: postgresql+asyncpg://user:password@localhost:5432/users_db
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13-alpine
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install project dependencies
+        run: |
+          poetry install --with dev --no-interaction --no-root
+          poetry add psycopg2-binary --group dev
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..10}; do
+            if pg_isready -h localhost -U $POSTGRES_USER -d $POSTGRES_DB; then
+              echo "PostgreSQL is ready!"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL... Attempt $i"
+            sleep 3
+          done
+          echo "PostgreSQL not ready after 30 seconds"
+          exit 1
+
+      - name: Run database migrations
+        run: |
+          poetry run alembic upgrade head
+
+      - name: Diagnostic info
+        run: |
+          echo "📦 Python version: $(python --version)"
+          echo "🔧 Poetry version: $(poetry --version)"
+          echo "🗄️ Database version: $(PGPASSWORD=$POSTGRES_PASSWORD psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -tAc "SELECT version()")"
+          echo "📜 Database tables:"
+          PGPASSWORD=$POSTGRES_PASSWORD psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -c "\dt"
+
+      - name: Run tests with coverage
+        run: |
+          poetry run pytest -v --cov=src --cov-report=xml --cov-fail-under=80
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Upload coverage to Codecov
+        if: success() || failure()
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests

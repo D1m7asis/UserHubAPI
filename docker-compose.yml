@@ -5,8 +5,11 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./src:/app/src
+      - ./alembic.ini:/app/alembic.ini  # Монтируем alembic.ini
+      - ./alembic:/app/alembic  # Монтируем директорию alembic
     environment:
       - DATABASE_URL=postgresql+asyncpg://user:password@db:5432/users_db
+      - ALEMBIC_DATABASE_URL=postgresql+psycopg2://user:password@db:5432/users_db
     ports:
       - "8000:8000"
     depends_on:

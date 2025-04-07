@@ -1,8 +1,7 @@
 from litestar import Litestar
 from litestar.openapi import OpenAPIConfig
 
-from src.app.db import create_tables
-from src.app.routes.user import UserController
+from src.app.routes.users import UserController
 
 # Конфигурация OpenAPI
 openapi_config = OpenAPIConfig(
@@ -13,8 +12,7 @@ openapi_config = OpenAPIConfig(
 
 app = Litestar(
     route_handlers=[UserController],
-    openapi_config=openapi_config,
-    on_startup=[create_tables]
+    openapi_config=openapi_config
 )
 
 if __name__ == "__main__":
