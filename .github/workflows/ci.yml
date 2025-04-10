@@ -71,11 +71,37 @@ jobs:
           echo "📜 Database tables:"
           PGPASSWORD=$POSTGRES_PASSWORD psql -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -c "\dt"
 
-      - name: Run tests with coverage
+      - name: Find test files
+        id: find-tests
         run: |
-          poetry run pytest -v --cov=src --cov-report=xml --cov-fail-under=80
+          # Находим все файлы с тестами и сохраняем их список в output
+          TEST_FILES=$(find tests -name "test_*.py" | tr '\n' ' ')
+          echo "test_files=${TEST_FILES}" >> $GITHUB_OUTPUT
+          echo "Found test files: ${TEST_FILES}"
+
+      - name: Run tests sequentially
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          # Разбиваем строку с файлами на массив
+          IFS=' ' read -ra TEST_FILE_ARRAY <<< "${{ steps.find-tests.outputs.test_files }}"
+          
+          # Запускаем каждый файл по очереди
+          for test_file in "${TEST_FILE_ARRAY[@]}"; do
+            if [ -n "$test_file" ]; then
+              echo "🚀 Running tests in: $test_file"
+              poetry run pytest -v --cov=src --cov-append "$test_file"
+              if [ $? -ne 0 ]; then
+                echo "❌ Tests failed in $test_file"
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Generate coverage report
+        run: |
+          poetry run coverage xml
+          poetry run coverage report --fail-under=80
 
       - name: Upload coverage to Codecov
         if: success() || failure()

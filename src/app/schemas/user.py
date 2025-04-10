@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 class UserCreate(BaseModel):
     name: str
     surname: str
-    password: str  # В реальном проекте никогда не принимайте пароль напрямую!
+    password: str  # Простой пример без хеширования пароля
 
     model_config = ConfigDict(from_attributes=True)
 

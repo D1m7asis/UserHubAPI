@@ -1,5 +1,3 @@
 /.idea
 **/__pycache__/
-/alembic/versions/*.py
-!alembic/versions/__init__.py
 /.venv

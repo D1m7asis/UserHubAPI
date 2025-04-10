@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "UserHub"
-version = "0.1.0"
+name = "UserHubAPI"
+version = "1.0.0"
 description = "REST API for managing users"
 authors = ["Tumanov Dmitry <D1m7asis@gmail.com>"]
 license = "MIT"
@@ -14,15 +14,18 @@ python = "^3.12"
 python-dotenv = "^1"
 litestar = { extras = ["standard"], version = "^2" }
 litestar-granian = "^0"
-litestar-asyncpg = "^0"
+litestar-asyncpg = "^0.3.0"
 advanced-alchemy = "^0.20"
 msgspec = "^0.18.6"
 pydantic = "^2.0"
 alembic = "^1.15.2"
 psycopg2-binary = "^2.9.10"
+asyncpg = ">=0.29.0,<0.30.0"
+logging = "^0.4.9.6"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^6.2"
+pytest = "^7.4.0"
+pytest-asyncio = "0.23.0"
 pytest-cov = "5.0.0"
 
 [tool.poetry.group.psycopg.dependencies]

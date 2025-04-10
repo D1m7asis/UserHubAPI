@@ -1,12 +1,7 @@
 import asyncio
-import os
 
 import pytest
-from alembic.command import upgrade
-from alembic.config import Config
 from litestar.testing import TestClient
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
 
 from src.app.asgi import app
 
@@ -35,20 +30,3 @@ def user_data() -> dict[str, str]:
         "surname": "User",
         "password": "TestPass123"
     }
-
-
-@pytest.fixture(scope="session", autouse=True)
-async def apply_migrations():
-    """Применяем миграции перед тестами"""
-    db_url = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/test_db")
-    engine = create_async_engine(db_url)
-
-    # Проверка соединения
-    async with engine.connect() as conn:
-        await conn.execute(text("SELECT 1"))
-
-    # Применяем миграции
-    alembic_cfg = Config("alembic.ini")
-    alembic_cfg.set_main_option("sqlalchemy.url", db_url)
-    upgrade(alembic_cfg, "head")
-    await engine.dispose()

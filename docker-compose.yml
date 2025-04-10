@@ -1,34 +1,43 @@
 services:
   app:
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      APP_PORT: ${APP_PORT}
+      RUNNING_IN_DOCKER: "true"
     build:
       context: .
       dockerfile: Dockerfile
     volumes:
       - ./src:/app/src
-      - ./alembic.ini:/app/alembic.ini  # Монтируем alembic.ini
-      - ./alembic:/app/alembic  # Монтируем директорию alembic
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://user:password@db:5432/users_db
-      - ALEMBIC_DATABASE_URL=postgresql+psycopg2://user:password@db:5432/users_db
+      - ./alembic.ini:/app/alembic.ini
+      - ./alembic:/app/alembic
+      - ./logs:/app/logs
     ports:
-      - "8000:8000"
+      - ${APP_PORT}:${APP_PORT}
     depends_on:
       db:
         condition: service_healthy
 
   db:
     image: postgres:13
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: users_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      APP_PORT: ${APP_PORT}
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U user -d users_db" ]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-users_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
     ports:
-      - "5432:5432"
+      - ${DB_PORT}:${DB_PORT}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
