@@ -9,11 +9,10 @@ from alembic import command
 from src.app.db import DATABASE_URL
 from src.app.models.user import User
 
-alembic_cfg = Config("alembic.ini")
+alembic_cfg = Config("../../alembic.ini")
 
 
 async def run_migrations():
-    await create_tables_if_not_exist()
     command.upgrade(alembic_cfg, "head")
 
 
@@ -56,4 +55,4 @@ async def create_tables_if_not_exist():
 
 
 if __name__ == "__main__":
-    asyncio.run(run_migrations())
+    asyncio.run(create_tables_if_not_exist())

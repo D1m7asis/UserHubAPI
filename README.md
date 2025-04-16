@@ -1,14 +1,14 @@
 # User API
 
 <p align="center">
-  <a href="https://github.com/your_username/user-api">
+  <a href="https://github.com/D1m7asis/UserHubAPI">
     <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version">
   </a>
-  <a href="https://github.com/your_username/user-api/blob/main/LICENSE">
+  <a href="https://github.com/D1m7asis/UserHubAPI/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
   </a>
-  <a href="https://github.com/your_username/user-api/actions">
-    <img src="https://github.com/your_username/user-api/workflows/CI/badge.svg" alt="Build Status">
+  <a href="https://github.com/D1m7asis/UserHubAPI/actions">
+    <img src="https://github.com/D1m7asis/UserHubAPI/actions/workflows/ci.yml/badge.svg" alt="Build Status">
   </a>
 </p>
 
@@ -42,11 +42,19 @@ poetry lock
 poetry install
 ```
 
-3. Запустите приложение:
+3. Запустите приложение через [docker-compose.yml](docker-compose.yml) (предпочтительно):
+
+```bash
+docker-compose up -d
+```
+(Либо же просто через Docker)
 ```bash
 docker build -t myapp . && \
 docker run -p 8000:8000 -e DATABASE_URL="postgresql+asyncpg://user:password@host.docker.internal:5432/users_db" myapp
 ```
+
+#### 3.1. Дополнительно: 
+Инициализируйте базу данных и таблицу users через [migrate.py](src/app/migrate.py), если это не произошло автоматически. 
 
 ## 📚 Документация API
 
@@ -66,18 +74,6 @@ docker run -p 8000:8000 -e DATABASE_URL="postgresql+asyncpg://user:password@host
 | created_at | TIMESTAMP WITH TIME ZONE | -           | (now() AT TIME ZONE 'UTC')   |
 | updated_at | TIMESTAMP WITH TIME ZONE | -           | (now() AT TIME ZONE 'UTC')   |
 
-### SQL для создания таблицы
-```sql
-CREATE TABLE user (
-    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    name VARCHAR(255) NOT NULL,
-    surname VARCHAR(255) NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT (now() AT TIME ZONE 'UTC'),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT (now() AT TIME ZONE 'UTC')
-);
-```
-
 ## 🔍 Доступные endpoints
 API поддерживает следующие операции:
 - ✅ Создание пользователя (POST /users)
@@ -94,16 +90,12 @@ API поддерживает следующие операции:
 ### Требования
 1. ✅ Поддержка Swagger/Redoc документации
 2. ✅ Реализация всех CRUD операций
-3. Валидация входных данных
-4. Логирование операций
-5. Конфигурация через переменные окружения
-
-### Как отправить решение
-1. Выложите код в публичный репозиторий на GitHub
-2. Пришлите ссылку на репозиторий и инструкцию по запуску
+3. ✅ Валидация входных данных
+4. ✅ Логирование операций
+5. ✅ Конфигурация через переменные окружения
 
 ## ⏱️ Затраченное время
-5 дней
+1 неделя
 
 ## 🤝 Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

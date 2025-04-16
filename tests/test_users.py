@@ -1,6 +1,5 @@
 def test_create_user(client, user_data):
     response = client.post("/users/", json=user_data)
-    print(response.json())
     assert response.status_code == 201
     data = response.json()["data"]
     assert data["name"] == user_data["name"]

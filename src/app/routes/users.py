@@ -62,16 +62,6 @@ class UserController(Controller):
                     headers={"Location": f"/users/{user.id}"}
                 )
 
-            except IntegrityError:
-                logger.warning(f"User already exists: {data.name} {data.surname}")
-                return Response(
-                    content={
-                        "status": "error",
-                        "code": "user_exists",
-                        "message": "User with these details already exists"
-                    },
-                    status_code=HTTP_409_CONFLICT
-                )
             except Exception as e:
                 logger.error(f"Failed to create user: {str(e)}", exc_info=True)
                 return Response(
