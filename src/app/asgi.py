@@ -1,8 +1,10 @@
 from litestar import Litestar
+from litestar.di import Provide
 from litestar.openapi import OpenAPIConfig
 
-from src.app.migrate import create_tables_if_not_exist
+from src.app.dependencies import provide_user_repository, provide_session
 from src.app.logging_config import setup_logging
+from src.app.migrate import create_tables_if_not_exist
 from src.app.routes.users import UserController
 
 logger = setup_logging()
@@ -19,10 +21,15 @@ async def app_startup():
     logger.info("Application started")
     await create_tables_if_not_exist()
 
+
 app = Litestar(
     route_handlers=[UserController],
     openapi_config=openapi_config,
-    on_startup=[app_startup]
+    on_startup=[app_startup],
+    dependencies={
+        "session": Provide(provide_session, sync_to_thread=False, use_cache=False),
+        "user_repo": Provide(provide_user_repository, sync_to_thread=False, use_cache=False),
+    },
 )
 
 if __name__ == "__main__":

@@ -1,16 +1,11 @@
 import logging
 from pathlib import Path
 
-from litestar import Controller, Response, MediaType
-from litestar import get, post, patch, delete
-from litestar.status_codes import HTTP_404_NOT_FOUND, HTTP_201_CREATED, HTTP_409_CONFLICT, \
-    HTTP_500_INTERNAL_SERVER_ERROR, HTTP_200_OK
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.future import select
-from sqlalchemy.sql import func
+from litestar import Controller, get, post, patch, delete, Response, MediaType
+from litestar.status_codes import *
 
-from src.app.db import SessionLocal
 from src.app.models.user import User
+from src.app.repositories.base import UserRepository
 from src.app.schemas.user import UserCreate, UserOut, UserUpdate
 
 logger = logging.getLogger("app")
@@ -22,234 +17,177 @@ class UserController(Controller):
         """Главная страница с приветственной документацией"""
         logger.debug("Accessing index page")
         template_path = Path(__file__).parent.parent / "templates" / "index.html"
-        html_content = template_path.read_text(encoding="utf-8")
-        return html_content
+
+        try:
+            html_content = template_path.read_text(encoding="utf-8")
+            logger.debug("Index page loaded successfully")
+            return html_content
+        except Exception as e:
+            logger.error(f"Failed to load index page: {e}", exc_info=True)
+            raise Exception("Failed to load the index page")
 
     @post("/users")
-    async def create_user(self, data: UserCreate) -> Response:
+    async def create_user(self, data: UserCreate, user_repo: UserRepository) -> Response:
         """Создает нового пользователя
-        Args:
-            data: Данные для создания пользователя (name, surname, password)
 
         Returns:
             Response: Ответ с результатом операции
                 - 201 - пользователь успешно создан
-                - 409 - такой пользователь уже существует
                 - 500 - ошибка сервера
         """
+        try:
+            logger.info(
+                f"Creating user with name {data.name} and surname {data.surname}"
+            )
 
-        logger.info(f"Attempting to create user: {data.name} {data.surname}")
+            user = User(name=data.name, surname=data.surname, password=data.password)
+            created = await user_repo.create(user)
+            logger.info(f"User created successfully: {created.id}")
 
-        async with SessionLocal() as session:
-            try:
-                user = User(
-                    name=data.name,
-                    surname=data.surname,
-                    password=data.password
-                )
+            return Response(
+                content={"status": "success", "data": UserOut.model_validate(created)},
+                status_code=HTTP_201_CREATED,
+            )
+        except Exception as e:
+            logger.error(f"Error creating user: {e}", exc_info=True)
 
-                session.add(user)
-                await session.commit()
-                await session.refresh(user)
-
-                logger.info(f"User created successfully: ID {user.id}")
-                return Response(
-                    content={
-                        "status": "success",
-                        "data": UserOut.model_validate(user)
-                    },
-                    status_code=HTTP_201_CREATED,
-                    headers={"Location": f"/users/{user.id}"}
-                )
-
-            except Exception as e:
-                logger.error(f"Failed to create user: {str(e)}", exc_info=True)
-                return Response(
-                    content={
-                        "status": "error",
-                        "code": "internal_error",
-                        "message": "Failed to create user",
-                        "details": str(e)
-                    },
-                    status_code=HTTP_500_INTERNAL_SERVER_ERROR
-                )
+            return Response(
+                content={"status": "error", "message": "Failed to create user"},
+                status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     @get("/users")
-    async def get_users(self) -> Response:
+    async def get_users(self, user_repo: UserRepository) -> Response:
         """
         Получает список всех пользователей
 
         Returns:
-            Response: Ответ со списком пользователей
+            Response: Ответ с результатом операции
+                - 200 - список пользователей
+                - 500 - ошибка сервера
         """
-
-        logger.debug("Fetching all users")
-
+        
         try:
-            async with SessionLocal() as session:
-                async with session.begin():
-                    result = await session.execute(select(User))
-                    users = result.scalars().all()
+            logger.debug("Fetching all users")
+            users = await user_repo.get_all()
+            logger.debug(f"Found {len(users)} users")
 
-            logger.info(f"Fetched {len(users)} users")
             return Response(
                 content={
                     "status": "success",
-                    "data": [UserOut.model_validate(user) for user in users]
+                    "data": [UserOut.model_validate(u) for u in users],
                 },
-                status_code=HTTP_200_OK
+                status_code=HTTP_200_OK,
             )
-
         except Exception as e:
-            logger.error(f"Failed to fetch users: {str(e)}", exc_info=True)
+            logger.error(f"Error fetching users: {e}", exc_info=True)
             return Response(
-                content={
-                    "status": "error",
-                    "code": "internal_error",
-                    "message": "Failed to fetch users"
-                },
-                status_code=HTTP_500_INTERNAL_SERVER_ERROR
+                content={"status": "error", "message": "Failed to fetch users"},
+                status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     @get("/users/{user_id:int}")
-    async def get_user(self, user_id: int) -> Response:
+    async def get_user(self, user_id: int, user_repo: UserRepository) -> Response:
         """
         Получает информацию о конкретном пользователе
 
-        Args:
-            user_id: ID пользователя
-
         Returns:
-            Response: Ответ с данными пользователя или ошибкой
+            Response: Ответ с результатом операции
+                - 200 - данные пользователя
+                - 404 - пользователь не найден
+                - 500 - ошибка сервера
         """
+        
+        try:
+            logger.debug(f"Fetching user with ID {user_id}")
+            user = await user_repo.get_by_id(user_id)
 
-        logger.debug(f"Fetching user with ID: {user_id}")
-
-        async with SessionLocal() as session:
-            try:
-                user = await session.get(User, user_id)
-
-                if not user:
-                    logger.warning(f"User not found: ID {user_id}")
-                    return Response(
-                        content={
-                            "status": "error",
-                            "code": "user_not_found",
-                            "message": f"User with ID {user_id} not found"
-                        },
-                        status_code=HTTP_404_NOT_FOUND
-                    )
-
-                logger.debug(f"Successfully fetched user ID {user_id}")
+            if not user:
+                logger.warning(f"User not found: ID {user_id}")
                 return Response(
-                    content={
-                        "status": "success",
-                        "data": UserOut.model_validate(user)
-                    },
-                    status_code=HTTP_200_OK
+                    content={"status": "error", "message": "User not found"},
+                    status_code=HTTP_404_NOT_FOUND,
                 )
-            except Exception as e:
-                logger.error(f"Error fetching user ID {user_id}: {str(e)}", exc_info=True)
-                return Response(
-                    content={
-                        "status": "error",
-                        "code": "internal_error",
-                        "message": "Failed to fetch user"
-                    },
-                    status_code=HTTP_500_INTERNAL_SERVER_ERROR
-                )
+
+            logger.debug(f"Found user: {user_id}")
+            return Response(
+                content={"status": "success", "data": UserOut.model_validate(user)},
+                status_code=HTTP_200_OK,
+            )
+        except Exception as e:
+            logger.error(f"Error fetching user {user_id}: {e}", exc_info=True)
+            return Response(
+                content={"status": "error", "message": "Failed to fetch user"},
+                status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     @patch("/users/{user_id:int}")
-    async def update_user(self, user_id: int, data: UserUpdate) -> Response:
+    async def update_user(self, user_id: int, data: UserUpdate, user_repo: UserRepository) -> Response:
         """
         Обновляет информацию о пользователе
 
-        Args:
-            user_id: ID пользователя
-            data: Данные для обновления
-
         Returns:
-            Response: Ответ с обновленными данными пользователя или ошибкой
+            Response: Ответ с результатом операции
+                - 200 - измененный пользователь
+                - 500 - ошибка сервера
         """
+        
+        try:
+            logger.debug(f"Updating user with ID {user_id}")
+            user = await user_repo.get_by_id(user_id)
 
-        logger.info(f"Updating user ID {user_id} with data: {data.dict(exclude_unset=True)}")
-
-        async with SessionLocal() as session:
-            try:
-                user = await session.get(User, user_id)
-
-                if not user:
-                    logger.warning(f"User not found for update: ID {user_id}")
-                    return Response(
-                        content={
-                            "status": "error",
-                            "code": "user_not_found",
-                            "message": f"User with ID {user_id} not found"
-                        },
-                        status_code=HTTP_404_NOT_FOUND
-                    )
-
-                update_data = data.dict(exclude_unset=True)
-                for key, value in update_data.items():
-                    setattr(user, key, value)
-                user.updated_at = func.now()
-
-                await session.commit()
-                await session.refresh(user)
-
-                logger.info(f"User ID {user_id} updated successfully")
+            if not user:
+                logger.warning(f"User not found: ID {user_id}")
                 return Response(
-                    content={
-                        "status": "success",
-                        "data": UserOut.model_validate(user)
-                    },
-                    status_code=HTTP_200_OK
-                )
-            except Exception as e:
-                logger.error(f"Failed to update user ID {user_id}: {str(e)}", exc_info=True)
-                await session.rollback()
-                return Response(
-                    content={
-                        "status": "error",
-                        "code": "internal_error",
-                        "message": "Failed to update user"
-                    },
-                    status_code=HTTP_500_INTERNAL_SERVER_ERROR
+                    content={"status": "error", "message": "User not found"},
+                    status_code=HTTP_404_NOT_FOUND,
                 )
 
-    @delete("/users/{user_id:int}", status_code=200)
-    async def delete_user(self, user_id: int) -> Response:
-        """Удаляет пользователя"""
-        logger.info(f"Attempting to delete user ID {user_id}")
+            updated = await user_repo.update(user, data.dict(exclude_unset=True))
+            logger.info(f"User {user_id} updated successfully")
+            return Response(
+                content={"status": "success", "data": UserOut.model_validate(updated)},
+                status_code=HTTP_200_OK,
+            )
+        except Exception as e:
+            logger.error(f"Error updating user {user_id}: {e}", exc_info=True)
+            return Response(
+                content={"status": "error", "message": "Failed to update user"},
+                status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
-        async with SessionLocal() as session:
-            try:
-                user = await session.get(User, user_id)
+    @delete("/users/{user_id:int}", status_code=HTTP_200_OK)
+    async def delete_user(self, user_id: int, user_repo: UserRepository) -> Response:
+        """
+        Удаляет пользователя
+        
+        Returns:
+            Response: Ответ с результатом операции
+                - 200 - пользователь успешно удален
+                - 404 - пользователь не найден
+                - 500 - ошибка сервера
+        """
+        
+        try:
+            logger.debug(f"Deleting user with ID {user_id}")
+            user = await user_repo.get_by_id(user_id)
 
-                if user is None:
-                    logger.warning(f"User not found for deletion: ID {user_id}")
-                    return Response(
-                        {"status": "error", "message": "User not found"},
-                        status_code=404
-                    )
-
-                await session.delete(user)
-                await session.commit()
-
-                logger.info(f"User ID {user_id} deleted successfully")
-                return Response(status_code=204, content=None)
-
-            except SQLAlchemyError as e:
-                logger.error(f"Database error deleting user ID {user_id}: {str(e)}", exc_info=True)
-                await session.rollback()
+            if not user:
+                logger.warning(f"User not found: ID {user_id}")
                 return Response(
-                    {"status": "error", "message": "Database error occurred while deleting user"},
-                    status_code=500
+                    content={"status": "error", "message": "User not found"},
+                    status_code=HTTP_404_NOT_FOUND,
                 )
-            except Exception as e:
-                logger.error(f"Unexpected error deleting user ID {user_id}: {str(e)}", exc_info=True)
-                await session.rollback()
-                return Response(
-                    {"status": "error", "message": "An unexpected error occurred"},
-                    status_code=500
-                )
+
+            await user_repo.delete(user)
+            logger.info(f"User {user_id} deleted successfully")
+            return Response(
+                content={"status": "success", "message": "User successfully deleted"},
+                status_code=HTTP_200_OK,
+            )
+        except Exception as e:
+            logger.error(f"Error deleting user {user_id}: {e}", exc_info=True)
+            return Response(
+                content={"status": "error", "message": "Failed to delete user"},
+                status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            )
