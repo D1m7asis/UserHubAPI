@@ -105,7 +105,7 @@ class UserController(Controller):
             if not user:
                 logger.warning(f"User not found: ID {user_id}")
                 return Response(
-                    content={"status": "error", "message": "User not found"},
+                    content={"status": "error", "message": f"User with ID {user_id} not found"},
                     status_code=HTTP_404_NOT_FOUND,
                 )
 
@@ -139,7 +139,7 @@ class UserController(Controller):
             if not user:
                 logger.warning(f"User not found: ID {user_id}")
                 return Response(
-                    content={"status": "error", "message": "User not found"},
+                    content={"status": "error", "message": f"User with ID {user_id} not found"},
                     status_code=HTTP_404_NOT_FOUND,
                 )
 
@@ -175,7 +175,7 @@ class UserController(Controller):
             if not user:
                 logger.warning(f"User not found: ID {user_id}")
                 return Response(
-                    content={"status": "error", "message": "User not found"},
+                    content={"status": "error", "message": f"User with ID {user_id} not found"},
                     status_code=HTTP_404_NOT_FOUND,
                 )
 

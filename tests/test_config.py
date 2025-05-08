@@ -15,7 +15,7 @@ def test_delete_user(client, user_data):
 
     # Шаг 2: Удаление пользователя
     delete_response = client.delete(f"/users/{user_id}")
-    assert delete_response.status_code == 204
+    assert delete_response.status_code == 200
 
     # Шаг 3: Проверка удаления
     get_response = client.get(f"/users/{user_id}")

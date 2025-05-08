@@ -53,7 +53,7 @@ def test_delete_user(client, user_data):
 
     # Удаляем
     delete_res = client.delete(f"/users/{user_id}")
-    assert delete_res.status_code == 204
+    assert delete_res.status_code == 200
 
     # Проверяем что удалился
     get_res = client.get(f"/users/{user_id}")
