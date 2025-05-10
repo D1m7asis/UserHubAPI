@@ -1,3 +1,5 @@
+from enum import Enum
+
 from sqlalchemy import Column, BigInteger, String, DateTime
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
@@ -14,3 +16,10 @@ class User(Base):
     password = Column(String(255))
     created_at = Column(DateTime(timezone=True), server_default=func.now())  # UTC
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())  # UTC
+
+
+class UserAction(str, Enum):
+    CREATE = "create"
+    READ = "read"
+    UPDATE = "update"
+    DELETE = "delete"

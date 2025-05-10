@@ -11,7 +11,7 @@ log_dir.mkdir(exist_ok=True)
 def setup_logging():
     # Основной логгер приложения
     logger = logging.getLogger("app")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
 
     # Файловый обработчик с ротацией
     log_file_handler = RotatingFileHandler(
@@ -30,7 +30,7 @@ def setup_logging():
 def setup_sql_logger():
     # Логгер SQLAlchemy
     sql_logger = logging.getLogger("sqlalchemy.engine")
-    sql_logger.setLevel(logging.DEBUG)
+    sql_logger.setLevel(logging.INFO)
 
     # Файловый обработчик с ротацией
     sql_file_handler = RotatingFileHandler(

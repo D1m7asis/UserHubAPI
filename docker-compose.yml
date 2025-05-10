@@ -41,5 +41,25 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - ${RMQ_PORT}:${RMQ_PORT}
+      - ${RMQ_WEB_PORT}:${RMQ_WEB_PORT}
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m src.app.worker.worker
+    environment:
+      PYTHONPATH: /app
+      RABBITMQ_URL: ${RMQ_URL}
+    volumes:
+      - ./src:/app/src
+      - ./logs:/app/logs
+    depends_on:
+      - rabbitmq
+      - db
+
 volumes:
   postgres_data:

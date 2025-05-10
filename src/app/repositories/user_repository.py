@@ -15,7 +15,7 @@ class SQLAlchemyUserRepository(UserRepository[User]):
 
     async def get_all(self) -> List[User]:
         result = await self.session.execute(select(self.model))
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def get_by_id(self, obj_id: int) -> User | None:
         return await self.session.get(self.model, obj_id)
@@ -34,6 +34,7 @@ class SQLAlchemyUserRepository(UserRepository[User]):
         await self.session.refresh(obj)
         return obj
 
-    async def delete(self, obj: User) -> None:
+    async def delete(self, obj_id: int) -> None:
+        obj = await self.session.get(self.model, obj_id)
         await self.session.delete(obj)
         await self.session.commit()

@@ -49,8 +49,3 @@ SessionLocal = async_sessionmaker(
     expire_on_commit=False,
     autoflush=False
 )
-
-
-async def get_db_session():
-    async with SessionLocal() as session:
-        yield session

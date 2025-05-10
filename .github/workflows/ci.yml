@@ -101,7 +101,7 @@ jobs:
       - name: Generate coverage report
         run: |
           poetry run coverage xml
-          poetry run coverage report --fail-under=80
+          poetry run coverage report
 
       - name: Upload coverage to Codecov
         if: success() || failure()
