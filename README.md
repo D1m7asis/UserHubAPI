@@ -62,6 +62,7 @@ docker run -p 8000:8000 -e DATABASE_URL="postgresql+asyncpg://user:password@host
 
 1. **Swagger UI**: http://localhost:8000/schema/swagger
 2. **Redoc**: http://localhost:8000/schema/redoc
+3. **Страница проверки задач**: http://localhost:8000/tasks
 
 ## 🗃️ Структура таблицы user
 

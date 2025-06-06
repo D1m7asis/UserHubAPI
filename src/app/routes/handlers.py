@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from src.app.models.user import UserAction
 from src.app.services.rabbitmq import RabbitMQService
+from src.app.repositories.task_repository import SQLAlchemyTaskResultRepository
 
 
 def handle_errors_and_logging(logger):
@@ -40,14 +41,17 @@ def handle_errors_and_logging(logger):
 
 
 class RabbitMQHandler:
-    def __init__(self, rabbitmq: RabbitMQService):
+    def __init__(self, rabbitmq: RabbitMQService, task_repo):
         self.rabbitmq = rabbitmq
+        self.task_repo = task_repo
 
     async def publish_task(
         self, queue_name: str, action: UserAction, data: dict = None
     ):
 
+        task_id = str(uuid.uuid4())
         message_data = {
+            "task_id": task_id,
             "action": action,
             "data": data or {},
             "metadata": {
@@ -60,8 +64,9 @@ class RabbitMQHandler:
             message_data=message_data,
         )
 
+        await self.task_repo.create(task_id)
+
         return {
             "status": "queued",
-            "message": "Task in progress",
-            "tracking_id": str(uuid.uuid4()),
+            "task_id": task_id,
         }

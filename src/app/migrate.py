@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import command
 from src.app.db import DATABASE_URL
-from src.app.models.user import User
+from src.app.models.user import Base
 
 alembic_cfg = Config("../../alembic.ini")
 
@@ -38,7 +38,7 @@ async def create_tables_if_not_exist():
         inspector = await conn.run_sync(lambda conn: inspect(conn))
         existing_tables = await conn.run_sync(lambda conn: inspector.get_table_names())
 
-        required_tables = set(User.metadata.tables.keys())
+        required_tables = set(Base.metadata.tables.keys())
 
         if required_tables.issubset(existing_tables):
             print("Все таблицы уже существуют")
@@ -46,7 +46,7 @@ async def create_tables_if_not_exist():
 
         # Создаём только отсутствующие таблицы
         for table_name in required_tables - set(existing_tables):
-            table = User.metadata.tables[table_name]
+            table = Base.metadata.tables[table_name]
             await conn.run_sync(table.create)
             print(f"Создана таблица: {table_name}")
 
