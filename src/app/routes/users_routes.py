@@ -8,6 +8,7 @@ from src.app.repositories.base import UserRepository
 from src.app.routes.handlers import handle_errors_and_logging, RabbitMQHandler
 from src.app.schemas.user import UserCreate, UserUpdate, UserOut
 from src.app.services.rabbitmq import RabbitMQService
+from src.app.repositories.task_repository import SQLAlchemyTaskResultRepository
 
 logger = logging.getLogger("app")
 
@@ -16,11 +17,11 @@ class UserController(Controller):
     @post("/users")
     @handle_errors_and_logging(logger)
     async def create_user(
-        self, data: UserCreate, rabbitmq: RabbitMQService
+        self, data: UserCreate, rabbitmq: RabbitMQService, task_repo: SQLAlchemyTaskResultRepository
     ) -> Response:
         """Создает нового пользователя через очередь задач"""
         user_data = data.dict()
-        result = await RabbitMQHandler(rabbitmq).publish_task(
+        result = await RabbitMQHandler(rabbitmq, task_repo).publish_task(
             queue_name="user_actions",
             action=UserAction.CREATE,
             data=user_data,
@@ -52,12 +53,13 @@ class UserController(Controller):
         user_id: int,
         data: UserUpdate,
         rabbitmq: RabbitMQService,
+        task_repo: SQLAlchemyTaskResultRepository,
     ) -> Response:
         """Обновляет информацию о пользователе"""
         user_data = data.dict(exclude_unset=True)
         user_data["user_id"] = user_id
 
-        result = await RabbitMQHandler(rabbitmq).publish_task(
+        result = await RabbitMQHandler(rabbitmq, task_repo).publish_task(
             queue_name="user_actions",
             action=UserAction.UPDATE,
             data=user_data,
@@ -70,10 +72,11 @@ class UserController(Controller):
         self,
         user_id: int,
         rabbitmq: RabbitMQService,
+        task_repo: SQLAlchemyTaskResultRepository,
     ) -> Response:
         """Удаляет пользователя"""
 
-        result = await RabbitMQHandler(rabbitmq).publish_task(
+        result = await RabbitMQHandler(rabbitmq, task_repo).publish_task(
             queue_name="user_actions",
             action=UserAction.DELETE,
             data=dict(user_id=user_id),

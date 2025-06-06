@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager
 import aio_pika
 from src.app.db import SessionLocal
 from src.app.models.user import UserAction
+from src.app.repositories.task_repository import SQLAlchemyTaskResultRepository
+from src.app.schemas.user import UserOut
 from src.app.worker.worker_handlers import (
     handle_create,
     handle_update,
@@ -23,22 +25,32 @@ async def process_message(message: aio_pika.IncomingMessage):
             data = json.loads(message.body.decode())
             action = data.get("action")
             payload = data.get("data", {})
+            task_id = data.get("task_id")
 
             logger.critical(f"payload {payload}")
 
             async with SessionLocal() as session:
+                task_repo = SQLAlchemyTaskResultRepository(session)
+                result = None
                 if action == UserAction.CREATE:
-                    await handle_create(session, payload)
+                    result = await handle_create(session, payload)
                 elif action == UserAction.READ:
-                    await handle_read(session, payload.get("user_id"))
+                    result = await handle_read(session, payload.get("user_id"))
                 elif action == UserAction.UPDATE:
-                    await handle_update(session, payload.get("user_id"), payload)
+                    result = await handle_update(session, payload.get("user_id"), payload)
                 elif action == UserAction.DELETE:
-                    await handle_delete(session, payload.get("user_id"))
+                    result = await handle_delete(session, payload.get("user_id"))
                 else:
                     raise ValueError(f"Unknown action: {action}")
 
                 await session.commit()
+                if isinstance(result, list):
+                    serialized = [UserOut.model_validate(r).model_dump() for r in result]
+                elif result is not None:
+                    serialized = UserOut.model_validate(result).model_dump()
+                else:
+                    serialized = None
+                await task_repo.update(task_id, status="done", result=serialized)
                 logger.info(f"Successfully processed {action} action")
 
         except Exception as e:

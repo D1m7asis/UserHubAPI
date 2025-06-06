@@ -5,12 +5,14 @@ from litestar.openapi import OpenAPIConfig
 from src.app.dependencies import (
     provide_user_repository,
     provide_session,
+    provide_task_repository,
     get_rabbitmq_service,
 )
 from src.app.logging_config import setup_logging
 from src.app.migrate import create_tables_if_not_exist
 from src.app.routes.system_routes import SystemController
 from src.app.routes.users_routes import UserController
+from src.app.routes.task_routes import TaskController
 
 logger = setup_logging()
 
@@ -28,12 +30,13 @@ async def app_startup():
 
 
 app = Litestar(
-    route_handlers=[UserController, SystemController],
+    route_handlers=[UserController, TaskController, SystemController],
     openapi_config=openapi_config,
     on_startup=[app_startup],
     dependencies={
         "session": Provide(provide_session, sync_to_thread=False, use_cache=False),
         "user_repo": Provide(provide_user_repository, sync_to_thread=False, use_cache=False),
+        "task_repo": Provide(provide_task_repository, sync_to_thread=False, use_cache=False),
         "rabbitmq": Provide(get_rabbitmq_service),
     },
 )
