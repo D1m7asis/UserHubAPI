@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статус задачи</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        #result {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Проверка статуса задачи</h1>
+    <input type="text" id="taskId" placeholder="Введите UUID задачи" style="width: 60%; padding: 8px;" />
+    <button onclick="checkTask()" style="padding: 8px 12px;">Проверить</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function checkTask() {
+            const id = document.getElementById('taskId').value;
+            if (!id) return;
+            const res = await fetch(`/tasks/${id}`);
+            const data = await res.json();
+            document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+        }
+    </script>
+</body>
+</html>

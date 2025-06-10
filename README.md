@@ -17,7 +17,7 @@ REST API для управления пользователями на базе 
 ## 📌 Технический стек
 - **Backend**: LiteStar (версия 2.x)
 - **База данных**: PostgreSQL + Advanced-SQLAlchemy
-- **Инфраструктура**: Docker
+- **Инфраструктура**: Docker, Kubernetes
 - **Пакетный менеджер**: Poetry 1.8.3
 
 ## 🚀 Быстрый старт
@@ -52,6 +52,13 @@ docker-compose up -d
 docker build -t myapp . && \
 docker run -p 8000:8000 -e DATABASE_URL="postgresql+asyncpg://user:password@host.docker.internal:5432/users_db" myapp
 ```
+### Запуск в Kubernetes
+
+Примените манифесты из каталога `k8s` после сборки образа:
+```bash
+kubectl apply -f k8s/
+```
+
 
 #### 3.1. Дополнительно: 
 Инициализируйте базу данных и таблицу users через [migrate.py](src/app/migrate.py), если это не произошло автоматически. 
@@ -62,6 +69,7 @@ docker run -p 8000:8000 -e DATABASE_URL="postgresql+asyncpg://user:password@host
 
 1. **Swagger UI**: http://localhost:8000/schema/swagger
 2. **Redoc**: http://localhost:8000/schema/redoc
+3. **Страница проверки задач**: http://localhost:8000/tasks
 
 ## 🗃️ Структура таблицы user
 
